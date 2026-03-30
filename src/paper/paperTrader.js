@@ -1,6 +1,7 @@
-const Trade  = require('../db/models/Trade');
-const broker = require('../broker/upstox');
-const logger = require('../utils/logger');
+const Trade      = require('../db/models/Trade');
+const broker     = require('../broker/upstox');
+const calculator = require('../charges/brokerageCalculator');
+const logger     = require('../utils/logger');
 
 class PaperTrader {
 
@@ -65,8 +66,15 @@ class PaperTrader {
         }
 
         if (shouldClose) {
-          await trade.closeTrade(exitPrice, closeStatus);
-          logger.info(`[Paper] ${trade.symbolName} closed | ${closeStatus} | P&L: ₹${trade.pnl}`);
+          const chargeCalc = calculator.calculate({
+            entryPrice:  trade.entryPrice,
+            exitPrice,
+            qty:         trade.qty,
+            tradeType:   trade.type,
+            productType: trade.productType || 'intraday',
+          });
+          await trade.closeTrade(exitPrice, closeStatus, chargeCalc);
+          logger.info(`[Paper] ${trade.symbolName} closed | ${closeStatus} | Net P&L: ₹${chargeCalc.netPnL}`);
         }
 
       } catch (err) {

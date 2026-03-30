@@ -16,7 +16,9 @@ const IS_PAPER = config.tradeMode === 'paper';
 async function runScan() {
   logger.info('[Bot] Starting scan...');
 
-  const dailyPnL   = IS_PAPER ? 0 : await broker.getDailyPnL();
+  const dailyPnL   = IS_PAPER
+    ? (await paperTrader.getPnLSummary({ period: 'today' })).totalPnL
+    : await broker.getDailyPnL();
   const allSignals = await signals.scanAll(dailyPnL);
 
   if (!allSignals.length) {
@@ -113,7 +115,7 @@ async function runBot() {
     await telegram.sendMessage(`🔄 Closing trade \`${tradeId}\`...`);
     const result = await orderManager.manualClose(tradeId);
     if (!result.success) {
-      await telegram.sendMessage(`❗ Close failed: ${result.reason}`);
+      await telegram.sendMessage(`❗ Close failed: ${result.reason.replace(/_/g, '\\_')}`);
     }
   });
 
@@ -125,19 +127,23 @@ async function runBot() {
 
   // ── Paper trade SL/TP checker every 5 min ────
   if (IS_PAPER) {
-    setInterval(() => paperTrader.checkOpenTrades(), 5 * 60 * 1000);
+    setInterval(() => paperTrader.checkOpenTrades(), 1 * 60 * 1000);
   }
 
   // ── End of day at 3:25 PM IST ─────────────────
+  let eodDoneDateStr = '';
   setInterval(async () => {
     const now = new Date();
     const ist = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
-    if (ist.getHours() === 15 && ist.getMinutes() === 25) {
+    const dateStr = ist.toDateString();
+    // Trigger once per day when time reaches or passes 15:25
+    if (ist.getHours() === 15 && ist.getMinutes() >= 25 && eodDoneDateStr !== dateStr) {
+      eodDoneDateStr = dateStr;
       await orderManager.endOfDay();
       const s = await paperTrader.getPnLSummary({ period: 'today' });
       await telegram.sendDailySummary({
         trades: s.closed, wins: s.wins,
-        losses: s.losses, pnl: s.totalNetPnL,
+        losses: s.losses, pnl: s.totalPnL,
       });
       downloader.clearCache();  // clear cache at EOD
     }

@@ -21,11 +21,51 @@ module.exports = {
       'NSE_EQ|INE002A01018',
       'NSE_EQ|INE009A01021',
       'NSE_EQ|INE467B01029',
+      'NSE_EQ|INE040A01034',
+      'NSE_EQ|INE090A01021',
+      'NSE_EQ|INE062A01020',
+      'NSE_EQ|INE296A01032',
+      'NSE_EQ|INE237A01036',
+      'NSE_EQ|INE238A01034',
+      'NSE_EQ|INE075A01022',
+      'NSE_EQ|INE860A01027',
+      'NSE_EQ|INE585B01010',
+      'NSE_EQ|INE018A01030',
+      'NSE_EQ|INE021A01026',
+      'NSE_EQ|INE280A01028',
+      'NSE_EQ|INE669C01036',
+      'NSE_EQ|INE044A01036',
+      'NSE_EQ|INE089A01031',
+      'NSE_EQ|INE213A01029',
+      'NSE_EQ|INE752E01010',
+      'NSE_EQ|INE733E01010',
+      'NSE_EQ|INE397D01024',
+      'NSE_EQ|INE154A01025',
     ],
     symbolNames: {
       'NSE_EQ|INE002A01018': 'RELIANCE',
       'NSE_EQ|INE009A01021': 'INFY',
       'NSE_EQ|INE467B01029': 'TCS',
+      'NSE_EQ|INE040A01034': 'HDFCBANK',
+      'NSE_EQ|INE090A01021': 'ICICIBANK',
+      'NSE_EQ|INE062A01020': 'SBIN',
+      'NSE_EQ|INE296A01032': 'BAJFINANCE',
+      'NSE_EQ|INE237A01036': 'KOTAKBANK',
+      'NSE_EQ|INE238A01034': 'AXISBANK',
+      'NSE_EQ|INE075A01022': 'WIPRO',
+      'NSE_EQ|INE860A01027': 'HCLTECH',
+      'NSE_EQ|INE585B01010': 'MARUTI',
+      'NSE_EQ|INE018A01030': 'LT',
+      'NSE_EQ|INE021A01026': 'ASIANPAINT',
+      'NSE_EQ|INE280A01028': 'TITAN',
+      'NSE_EQ|INE669C01036': 'TECHM',
+      'NSE_EQ|INE044A01036': 'SUNPHARMA',
+      'NSE_EQ|INE089A01031': 'DRREDDY',
+      'NSE_EQ|INE213A01029': 'ONGC',
+      'NSE_EQ|INE752E01010': 'POWERGRID',
+      'NSE_EQ|INE733E01010': 'NTPC',
+      'NSE_EQ|INE397D01024': 'BHARTIARTL',
+      'NSE_EQ|INE154A01025': 'ITC',
     },
     timeframe:        '30minute',
     htfTimeframe:     'day',
@@ -55,7 +95,7 @@ module.exports = {
     // Used when mode = 'risk' (risk % per trade)
     maxRiskPct:      Number(process.env.MAX_RISK_PER_TRADE_PCT) || 2,
     maxDailyLossPct: Number(process.env.MAX_DAILY_LOSS_PCT) || 6,
-    maxOpenTrades:   3,
+    maxOpenTrades:   6,
   },
 
   db: {
@@ -65,5 +105,20 @@ module.exports = {
     },
   },
 
-  scanIntervalMs: 60000,
+  timing: {
+    avoidOpenMinutes:  15,   // skip first 15 min after market open
+    avoidCloseMinutes: 15,   // skip last 15 min before market close
+  },
+
+  // ── Paper-mode relaxed thresholds ────────────
+  // These override strategy values only in paper mode
+  paper: {
+    atrMultiplier:    1.5,   // impulse ≥ 1.5× ATR  (live: 2.0×)
+    minRiskReward:    2,     // R:R ≥ 1:2            (live: 1:3)
+    maxZoneTests:     5,     // allow zones tested up to 5× (live: 0)
+    volumeSpikeRatio: 1.2,   // volume ≥ 1.2× avg    (live: 1.5×)
+    minPassCount:     2,     // need 2/10 conditions  (live: 10/10)
+  },
+
+  scanIntervalMs: 1000 * 60,  // 1 minute
 };

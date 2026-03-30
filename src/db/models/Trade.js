@@ -88,11 +88,14 @@ TradeSchema.virtual('isOpen').get(function () {
 });
 
 // ── Instance method: close the trade ─────────────
-TradeSchema.methods.closeTrade = async function (exitPrice, status) {
-  const entry  = this.entryPrice;
-  const pnl    = this.type === 'BUY'
-    ? (exitPrice - entry) * this.qty
-    : (entry - exitPrice) * this.qty;
+TradeSchema.methods.closeTrade = async function (exitPrice, status, chargeCalc = null) {
+  const entry = this.entryPrice;
+  // Use net P&L (fees deducted) if chargeCalc provided, otherwise gross
+  const pnl = chargeCalc
+    ? chargeCalc.netPnL
+    : (this.type === 'BUY'
+        ? (exitPrice - entry) * this.qty
+        : (entry - exitPrice) * this.qty);
   const pnlPct = (pnl / this.capitalUsed) * 100;
 
   this.exitPrice = exitPrice;

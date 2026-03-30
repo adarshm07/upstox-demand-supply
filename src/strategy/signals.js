@@ -52,13 +52,20 @@ class SignalGenerator {
 
       // 3. Detect all zones and filter fresh ones
       const allZones   = detector.detectZones(candles);
-      const freshZones = allZones.filter(z => z.testCount === 0);
+      const isPaper    = config.tradeMode === 'paper';
 
-      logger.info(`[${symbolName}] ₹${currentPrice} | Zones: ${allZones.length} total, ${freshZones.length} fresh`);
+      // Paper: allow zones tested up to maxZoneTests; live: fresh only (0 tests)
+      const maxTests       = isPaper ? config.paper.maxZoneTests : 0;
+      const candidateZones = allZones.filter(z => z.testCount <= maxTests);
 
-      // 4. Check if price is inside any fresh zone
-      const activeZone = freshZones.find(z =>
-        currentPrice >= z.low && currentPrice <= z.high
+      logger.info(`[${symbolName}] ₹${currentPrice} | Zones: ${allZones.length} total, ${candidateZones.length} candidate`);
+
+      // 4. Check if price is inside (or near) a zone
+      // Paper: add 1% proximity buffer around zone edges so near-misses count
+      const buffer = isPaper ? 0.01 : 0;
+      const activeZone = candidateZones.find(z =>
+        currentPrice >= z.low  * (1 - buffer) &&
+        currentPrice <= z.high * (1 + buffer)
       );
 
       if (!activeZone) {

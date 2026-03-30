@@ -137,21 +137,23 @@ class DataDownloader {
       let candles = [];
 
       if (INTRADAY_INTERVALS.has(upstoxInterval)) {
-        // ── Intraday: fetch current day data ─────
-        // For strategy we also need recent history so we fetch
-        // daily candles separately and combine them
-        const [intradayCandles, historicalCandles] = await Promise.all([
+        // ── Intraday: fetch historical + today's candles on the same timeframe ─────
+        const [todayCandles, historicalCandles] = await Promise.all([
           this._fetchIntraday(instrumentKey, upstoxInterval),
-          this._fetchHistoricalChunked(instrumentKey, 'day', days),
+          this._fetchHistoricalChunked(instrumentKey, upstoxInterval, days),
         ]);
 
-        // Use historical daily candles for zone detection
-        // and intraday for the latest price action
-        candles = historicalCandles;
+        // Merge historical + today, deduplicate by timestamp
+        const merged = [...historicalCandles, ...todayCandles];
+        const seen   = new Set();
+        candles = merged.filter(c => {
+          const k = c.time.toISOString();
+          if (seen.has(k)) return false;
+          seen.add(k);
+          return true;
+        }).sort((a, b) => a.time - b.time);
 
-        if (intradayCandles.length > 0) {
-          logger.info(`[DataDownloader] Appended ${intradayCandles.length} intraday candles`);
-        }
+        logger.info(`[DataDownloader] Merged ${historicalCandles.length} historical + ${todayCandles.length} today = ${candles.length} candles`);
 
       } else {
         // ── Daily/Weekly: fetch full history ─────

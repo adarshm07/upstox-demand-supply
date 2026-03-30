@@ -49,21 +49,19 @@ class CapitalManager {
       case 'risk':
       default: {
         const maxRisk = cfg.total * (cfg.maxRiskPct / 100);
-        qty           = Math.floor(maxRisk / riskPerShare);
+        const riskQty = Math.floor(maxRisk / riskPerShare);
+        // Cap qty so cost never exceeds available capital
+        const maxQty  = Math.floor(cfg.total / entryPrice);
+        qty           = Math.min(riskQty, maxQty);
         capitalUsed   = qty * entryPrice;
         riskAmount    = qty * riskPerShare;
-        logger.info(`[Capital] Mode=risk | MaxRisk=₹${maxRisk.toFixed(0)} | RiskPerShare=₹${riskPerShare.toFixed(2)} | Qty=${qty}`);
+        logger.info(`[Capital] Mode=risk | MaxRisk=₹${maxRisk.toFixed(0)} | RiskPerShare=₹${riskPerShare.toFixed(2)} | Qty=${qty} (capped at ${maxQty})`);
         break;
       }
     }
 
     if (qty < 1) {
       logger.warn(`[Capital] Qty < 1 — trade not viable`);
-      return null;
-    }
-
-    if (capitalUsed > cfg.total) {
-      logger.warn(`[Capital] Capital needed ₹${capitalUsed} > total ₹${cfg.total}`);
       return null;
     }
 

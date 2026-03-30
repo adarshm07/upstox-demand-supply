@@ -135,7 +135,7 @@ class TelegramTradeBot {
     // ─────────────────────────────────────────────
     async requestTradeConfirmation(tradeDetails) {
         const {
-            symbol, type, entry, sl, tp, qty,
+            symbolName: symbol, type, entry, sl, tp, qty,
             rr, pattern, zone, conditionLog
         } = tradeDetails;
 
@@ -148,7 +148,7 @@ class TelegramTradeBot {
         const message =
             `${emoji} *TRADE SIGNAL — ${symbol}*
 ━━━━━━━━━━━━━━━━━━━━
-📌 *Zone:* ${zoneType} \\[${zone.low.toFixed(1)} – ${zone.high.toFixed(1)}\\]
+📌 *Zone:* ${zoneType} [${zone.low.toFixed(1)} – ${zone.high.toFixed(1)}]
 📈 *Direction:* ${type}
 💰 *Entry:* ₹${entry}
 🛑 *Stop Loss:* ₹${sl}
@@ -165,11 +165,11 @@ ${conditionLog}
 
         // Send message with YES/NO inline buttons
         const sent = await this.bot.sendMessage(this.chatId, message, {
-            parse_mode: 'MarkdownV2',
+            parse_mode: 'Markdown',
             reply_markup: {
                 inline_keyboard: [[
-                    { text: '✅  YES – Place Order', callback_data: `YES:${sent?.message_id || 0}` },
-                    { text: '❌  NO – Skip', callback_data: `NO:${sent?.message_id || 0}` },
+                    { text: '✅  YES – Place Order', callback_data: 'YES:0' },
+                    { text: '❌  NO – Skip', callback_data: 'NO:0' },
                 ]],
             },
         });
@@ -210,6 +210,22 @@ ${conditionLog}
     _listenForReplies() {
         this.bot.on('callback_query', async (query) => {
             const [action, msgId] = query.data.split(':');
+
+            // ── Close trade button ──────────────────
+            if (action === 'CLOSE') {
+                const orderManager = require('../orders/orderManager');
+                await this.bot.answerCallbackQuery(query.id, { text: '🔄 Closing...' });
+                await this.bot.editMessageReplyMarkup(
+                    { inline_keyboard: [] },
+                    { chat_id: this.chatId, message_id: query.message.message_id }
+                );
+                const result = await orderManager.manualClose(msgId);
+                if (!result.success) {
+                    await this.sendMessage(`❗ Close failed: ${result.reason.replace(/_/g, '\\_')}`);
+                }
+                return;
+            }
+
             const messageId = parseInt(msgId);
             const pending = this.pending.get(messageId);
 
@@ -352,24 +368,29 @@ ${conditionLog}
             return;
         }
 
-        let msg = `📂 *Open Paper Trades (${open.length})*\n━━━━━━━━━━━━━━\n`;
-
         for (const t of open) {
             const ltp = await broker.getLTP(t.instrumentKey) || '—';
             const entry = parseFloat(t.entryPrice);
             const unrealPnL = typeof ltp === 'number'
                 ? ((t.type === 'BUY' ? ltp - entry : entry - ltp) * t.qty).toFixed(0)
                 : '—';
-            const pnlEmoji = unrealPnL >= 0 ? '🟢' : '🔴';
+            const pnlEmoji = typeof unrealPnL === 'number' && unrealPnL >= 0 ? '🟢' : '🔴';
 
-            msg +=
+            const msg =
                 `${pnlEmoji} *${t.symbolName}* ${t.type}\n` +
-                `   Entry: ₹${entry} | LTP: ₹${ltp}\n` +
-                `   SL: ₹${t.sl} | TP: ₹${t.tp}\n` +
-                `   Unrealised P&L: ₹${unrealPnL}\n\n`;
-        }
+                `Entry: ₹${entry} | LTP: ₹${ltp}\n` +
+                `SL: ₹${t.sl} | TP: ₹${t.tp}\n` +
+                `Unrealised P&L: ₹${unrealPnL}`;
 
-        await this.sendMessage(msg);
+            await this.bot.sendMessage(this.chatId, msg, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: '🔒 Close Trade', callback_data: `CLOSE:${t._id}` },
+                    ]],
+                },
+            });
+        }
     }
 
     // ─────────────────────────────────────────────
