@@ -1,0 +1,65 @@
+services:
+  - type: worker                  # background worker — no HTTP port needed
+    name: upstox-sd-bot
+    runtime: node
+    buildCommand: npm install
+    startCommand: node src/index.js
+    autoDeploy: true              # redeploy automatically on git push
+
+    envVars:
+      # ── Mode ──────────────────────────────────────────────────────────────
+      - key: TRADE_MODE
+        value: paper              # change to 'live' for real orders
+
+      - key: TRADE_INSTRUMENT
+        value: equity             # change to 'options' for Nifty options mode
+
+      # ── Upstox (fill in Render dashboard) ─────────────────────────────────
+      - key: UPSTOX_API_KEY
+        sync: false
+
+      - key: UPSTOX_API_SECRET
+        sync: false
+
+      - key: UPSTOX_REDIRECT_URI
+        sync: false
+
+      - key: UPSTOX_ACCESS_TOKEN  # must be updated daily — short-lived OAuth token
+        sync: false
+
+      # ── Telegram ──────────────────────────────────────────────────────────
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+
+      - key: TELEGRAM_CHAT_ID
+        sync: false
+
+      # ── MongoDB Atlas ──────────────────────────────────────────────────────
+      - key: MONGO_URI
+        sync: false               # use MongoDB Atlas URI for cloud deployment
+
+      # ── Equity Capital ────────────────────────────────────────────────────
+      - key: CAPITAL
+        value: "100000"
+
+      - key: CAPITAL_MODE
+        value: risk
+
+      - key: MAX_RISK_PER_TRADE_PCT
+        value: "2"
+
+      - key: MAX_DAILY_LOSS_PCT
+        value: "6"
+
+      # ── Options Capital ───────────────────────────────────────────────────
+      - key: OPTIONS_CAPITAL
+        value: "20000"
+
+      - key: OPTIONS_RISK_PCT
+        value: "1"
+
+      - key: OPTIONS_MAX_PREMIUM_PCT
+        value: "10"
+
+      - key: OPTIONS_MAX_TRADES
+        value: "10"
