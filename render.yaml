@@ -3,7 +3,7 @@ services:
     name: upstox-sd-bot
     runtime: node
     buildCommand: npm install
-    startCommand: node src/index.js
+    startCommand: npm start
     autoDeploy: true              # redeploy automatically on git push
 
     envVars:
