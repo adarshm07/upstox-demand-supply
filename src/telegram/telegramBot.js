@@ -43,19 +43,43 @@ class TelegramTradeBot {
             await this._handleCapitalInfo();
         });
 
+        // ── /optionpnl ── Options P&L (today) ─────────
+        this.bot.onText(/\/optionpnl(?:week|month|all)?/, async (msg) => {
+            const text = msg.text || '';
+            const period = text.includes('week')  ? 'week'
+                         : text.includes('month') ? 'month'
+                         : text.includes('all')   ? 'all'
+                         : 'today';
+            await this._handleOptionsPnL(period);
+        });
+
+        // ── /optiontrades ── Open options positions ────
+        this.bot.onText(/\/optiontrades/, async () => {
+            await this._handleOpenOptionsTrades();
+        });
+
         // ── /help ── Command list ──────────────────────
         this.bot.onText(/\/help/, async () => {
             await this.sendMessage(
                 `*📋 Bot Commands*\n` +
                 `━━━━━━━━━━━━━━━\n` +
-                `\`/pnl\`         — Today's P&L\n` +
-                `\`/pnl RELIANCE\` — P&L for one stock\n` +
-                `\`/pnlweek\`     — This week\n` +
-                `\`/pnlmonth\`    — Last 30 days\n` +
-                `\`/pnlall\`      — All time\n` +
-                `\`/trades\`      — Open paper trades\n` +
-                `\`/capital\`     — Capital config\n` +
-                `\`/status\`      — Bot status\n`
+                `*Equity (S&D)*\n` +
+                `\`/pnl\`           — Today's equity P&L\n` +
+                `\`/pnl RELIANCE\`  — P&L for one stock\n` +
+                `\`/pnlweek\`       — This week\n` +
+                `\`/pnlmonth\`      — Last 30 days\n` +
+                `\`/pnlall\`        — All time\n` +
+                `\`/trades\`        — Open equity trades\n` +
+                `\`/capital\`       — Capital config\n` +
+                `\n*Nifty Options*\n` +
+                `\`/optionpnl\`     — Today's options P&L\n` +
+                `\`/optionpnlweek\` — This week\n` +
+                `\`/optionpnlmonth\`— Last 30 days\n` +
+                `\`/optionpnlall\`  — All time\n` +
+                `\`/optiontrades\`  — Open options positions\n` +
+                `\n*General*\n` +
+                `\`/status\`        — Bot status\n` +
+                `\`/close <id>\`    — Manually close a trade\n`
             );
         });
     }
@@ -380,6 +404,74 @@ ${conditionLog}
                 `${pnlEmoji} *${t.symbolName}* ${t.type}\n` +
                 `Entry: ₹${entry} | LTP: ₹${ltp}\n` +
                 `SL: ₹${t.sl} | TP: ₹${t.tp}\n` +
+                `Unrealised P&L: ₹${unrealPnL}`;
+
+            await this.bot.sendMessage(this.chatId, msg, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [[
+                        { text: '🔒 Close Trade', callback_data: `CLOSE:${t._id}` },
+                    ]],
+                },
+            });
+        }
+    }
+
+    // ─────────────────────────────────────────────
+    // HANDLER: Options P&L summary
+    // ─────────────────────────────────────────────
+    async _handleOptionsPnL(period = 'today') {
+        const optsMgr = require('../options/optionsOrderManager');  // lazy to avoid circular
+        const s = await optsMgr.getPnLSummary({ period });
+
+        const emoji = s.totalPnL >= 0 ? '📈' : '📉';
+        const pnlStr = s.totalPnL >= 0
+            ? `+₹${s.totalPnL.toLocaleString('en-IN')}`
+            : `-₹${Math.abs(s.totalPnL).toLocaleString('en-IN')}`;
+
+        const periodLabel = {
+            today: 'Today', week: 'This Week', month: 'Last 30 Days', all: 'All Time',
+        }[period] || period;
+
+        await this.sendMessage(
+            `${emoji} *Nifty Options P&L — ${periodLabel}*\n` +
+            `━━━━━━━━━━━━━━━━━━\n` +
+            `💰 Net P&L: *${pnlStr}*\n` +
+            `📊 Trades: ${s.closed} closed, ${s.open} open\n` +
+            `✅ Wins: ${s.wins} | ❌ Losses: ${s.losses}\n` +
+            `🎯 Win Rate: ${s.winRate}%\n` +
+            `━━━━━━━━━━━━━━━━━━\n` +
+            `_Capital: ₹${require('../../config').options.capital.toLocaleString('en-IN')}_`
+        );
+    }
+
+    // ─────────────────────────────────────────────
+    // HANDLER: List open options paper trades
+    // ─────────────────────────────────────────────
+    async _handleOpenOptionsTrades() {
+        const Trade  = require('../db/models/Trade');
+        const broker = require('../broker/upstox');
+
+        const open = await Trade.find({ status: 'open', mode: 'options-paper' });
+
+        if (!open.length) {
+            await this.sendMessage('📭 No open options trades right now.');
+            return;
+        }
+
+        for (const t of open) {
+            const ltp         = await broker.getLTP(t.instrumentKey) || null;
+            const unrealPnL   = ltp != null
+                ? ((ltp - t.entryPrice) * t.qty).toFixed(0)
+                : '—';
+            const pnlEmoji    = (ltp != null && ltp >= t.entryPrice) ? '🟢' : '🔴';
+            const expiry      = t.expiryDate || '—';
+
+            const msg =
+                `${pnlEmoji} *${t.symbolName}*\n` +
+                `Entry: ₹${t.entryPrice} | LTP: ₹${ltp ?? '—'}\n` +
+                `SL: ₹${t.sl} | TP: ₹${t.tp}\n` +
+                `Units: ${t.qty} | Expiry: ${expiry}\n` +
                 `Unrealised P&L: ₹${unrealPnL}`;
 
             await this.bot.sendMessage(this.chatId, msg, {
