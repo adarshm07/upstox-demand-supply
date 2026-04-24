@@ -5,7 +5,7 @@ const TradeSchema = new mongoose.Schema(
     // ── Identity ─────────────────────────────────
     mode: {
       type:     String,
-      enum:     ['paper', 'live'],
+      enum:     ['paper', 'live', 'options-paper', 'options-live'],
       required: true,
       default:  'paper',
       index:    true,
@@ -70,6 +70,13 @@ const TradeSchema = new mongoose.Schema(
     slOrderId: { type: String, default: null },
     tpOrderId: { type: String, default: null },
     notes:     { type: String, default: null },
+
+    // ── Options-specific fields (null for equity trades) ──
+    optionType: { type: String, enum: ['CE', 'PE', null], default: null },
+    strike:     { type: Number, default: null },
+    lots:       { type: Number, default: null },
+    lotSize:    { type: Number, default: null },
+    expiryDate: { type: String, default: null },  // YYYY-MM-DD
   },
   {
     timestamps: true,   // adds createdAt, updatedAt automatically

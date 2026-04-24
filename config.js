@@ -121,4 +121,46 @@ module.exports = {
   },
 
   scanIntervalMs: 1000 * 60,  // 1 minute
+
+  // ── Trading instrument mode ──────────────────
+  // 'equity'  → scan the 23 NSE stocks (default)
+  // 'options' → scan Nifty 50 weekly options
+  tradeInstrument: process.env.TRADE_INSTRUMENT || 'equity',
+
+  // ── Nifty 50 weekly options ──────────────────
+  options: {
+    underlying:     'NSE_INDEX|Nifty 50',
+    underlyingName: 'NIFTY',
+    lotSize:        25,      // NSE lot size for Nifty
+    strikeStep:     50,      // Nifty strike intervals (50 pts)
+    strikesITM:     1,       // go 1 strike ITM
+
+    timeframe:    '15minute',
+    htfTimeframe: 'day',
+
+    // Capital & risk
+    capital:         Number(process.env.OPTIONS_CAPITAL)          || 20000,
+    maxPremiumPct:   Number(process.env.OPTIONS_MAX_PREMIUM_PCT)  || 10,   // % of capital to spend per trade
+    maxRiskPct:      Number(process.env.OPTIONS_RISK_PCT)         || 1,    // % of capital = max loss per trade
+    maxTradesPerDay: Number(process.env.OPTIONS_MAX_TRADES)       || 10,
+
+    // Exit rules
+    slDropPct:       50,     // exit if option premium drops this %
+    tpMultiplier:    2.0,    // target = entry premium × multiplier
+    minDaysToExpiry: 2,      // skip if expiry is within N days
+
+    // Entry thresholds (relaxed for paper)
+    minRiskReward:    2.0,
+    atrMultiplier:    1.5,
+    volumeSpikeRatio: 1.3,
+    minPassCount:     5,     // need 5/10 conditions for paper
+
+    // Zone detection params (same logic as equity)
+    atrPeriod:       14,
+    baseCandleCount: 5,
+    baseRangeRatio:  1.5,
+    zoneBuffer:      0.002,
+
+    scanIntervalMs:  60 * 1000,
+  },
 };
