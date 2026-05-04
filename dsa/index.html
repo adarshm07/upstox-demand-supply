@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DSA Patterns — Learn with Animations</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <span class="logo-icon">⚡</span>
+          <div>
+            <div class="logo-title">DSA Patterns</div>
+            <div class="logo-sub">Learn by visualization</div>
+          </div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+          <div class="progress-label" id="progress-label">0 / 28 solved</div>
+        </div>
+      </div>
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input id="search-input" type="text" placeholder="Search problems…" autocomplete="off">
+      </div>
+      <nav class="pattern-nav" id="pattern-nav"></nav>
+    </aside>
+
+    <main class="main" id="main">
+      <!-- Welcome screen -->
+      <div id="welcome" class="welcome">
+        <div class="welcome-hero">
+          <h1>Master DSA <span class="gradient-text">by Pattern</span></h1>
+          <p>Step through animated visualizations for every classic algorithm pattern.<br>See the algorithm think — not just the code.</p>
+        </div>
+        <div class="pattern-grid" id="pattern-grid"></div>
+      </div>
+
+      <!-- Problem view -->
+      <div id="problem-view" class="problem-view hidden">
+        <div class="pv-header">
+          <button class="btn-back" id="btn-back">← Patterns</button>
+          <div class="pv-title-wrap">
+            <span class="pattern-chip" id="pv-pattern"></span>
+            <h2 id="pv-title"></h2>
+            <div class="pv-tags">
+              <span class="badge" id="pv-difficulty"></span>
+              <span class="badge badge-outline" id="pv-time"></span>
+              <span class="badge badge-outline" id="pv-space"></span>
+            </div>
+          </div>
+          <div class="pv-nav">
+            <button class="btn-nav" id="btn-prev">‹ Prev</button>
+            <span id="pv-counter" class="pv-counter"></span>
+            <button class="btn-nav" id="btn-next">Next ›</button>
+          </div>
+        </div>
+
+        <div class="pv-body">
+          <!-- Left: description + approach -->
+          <div class="panel panel-desc">
+            <div class="panel-label">Problem</div>
+            <div class="panel-content" id="pv-description"></div>
+            <div class="panel-label" style="margin-top:20px">Approach</div>
+            <div class="panel-content" id="pv-approach"></div>
+          </div>
+
+          <!-- Center: animation -->
+          <div class="panel panel-anim">
+            <div class="panel-top">
+              <div class="panel-label">Animation</div>
+              <span class="step-badge" id="step-badge">0 / 0</span>
+            </div>
+            <div class="canvas-wrap">
+              <canvas id="anim-canvas"></canvas>
+              <div class="canvas-placeholder" id="canvas-placeholder">
+                <span>▶ Press Play to start</span>
+              </div>
+            </div>
+            <div class="step-desc" id="step-desc">Select a step to see what the algorithm is doing.</div>
+            <div class="anim-controls">
+              <button class="ctrl" id="ctrl-reset" title="Reset">⏮</button>
+              <button class="ctrl" id="ctrl-prev-step" title="Previous">⏪</button>
+              <button class="ctrl ctrl-play" id="ctrl-play">▶ Play</button>
+              <button class="ctrl" id="ctrl-next-step" title="Next">⏩</button>
+              <button class="ctrl" id="ctrl-end" title="End">⏭</button>
+              <div class="speed-wrap">
+                <label class="speed-label">Speed</label>
+                <input type="range" id="speed-range" min="1" max="5" value="2">
+                <span id="speed-val">2×</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: code -->
+          <div class="panel panel-code">
+            <div class="panel-top">
+              <div class="panel-label">Solution</div>
+              <div class="lang-tabs">
+                <button class="lang-tab active" data-lang="javascript">JS</button>
+                <button class="lang-tab" data-lang="python">Python</button>
+              </div>
+            </div>
+            <div class="code-scroll">
+              <pre id="code-block" class="code-block"></pre>
+            </div>
+            <div class="solved-wrap">
+              <button class="btn-solved" id="btn-solved">Mark as Solved ✓</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="animations.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
