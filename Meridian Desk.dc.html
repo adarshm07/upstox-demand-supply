@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <template id="__bundler_thumbnail"><svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" rx="16" fill="#0f1729"/><g transform="translate(30,32)"><rect x="0" y="20" width="6" height="16" rx="1.5" fill="#37d399"/><rect x="2" y="14" width="2" height="6" fill="#37d399"/><rect x="12" y="8" width="6" height="22" rx="1.5" fill="#37d399"/><rect x="14" y="2" width="2" height="6" fill="#37d399"/><rect x="24" y="16" width="6" height="20" rx="1.5" fill="#ff6b81"/><rect x="26" y="12" width="2" height="4" fill="#ff6b81"/></g></svg></template>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{box-sizing:border-box;}
+    html,body{margin:0;padding:0;height:100%;background:#eef1f6;font-family:'IBM Plex Sans',system-ui,sans-serif;}
+    ::-webkit-scrollbar{width:9px;height:9px;}
+    ::-webkit-scrollbar-thumb{background:#cdd4e0;border-radius:6px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+  </style>
+</helmet>
+<div style="height:100vh;display:flex;flex-direction:column;font-family:'IBM Plex Sans',system-ui,sans-serif;color:#0f1729;background:#eef1f6;overflow:hidden;">
+
+  <header style="height:58px;flex:none;display:flex;align-items:center;gap:14px;padding:0 16px;background:#ffffff;border-bottom:1px solid #e3e7ee;z-index:5;">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:30px;height:30px;border-radius:8px;background:#0f1729;display:flex;align-items:center;justify-content:center;">
+        <div style="display:flex;align-items:flex-end;gap:2px;height:14px;">
+          <span style="width:3px;height:8px;background:#37d399;border-radius:1px;"></span>
+          <span style="width:3px;height:14px;background:#37d399;border-radius:1px;"></span>
+          <span style="width:3px;height:6px;background:#ff6b81;border-radius:1px;"></span>
+        </div>
+      </div>
+      <div style="line-height:1.05;">
+        <div style="font-size:14px;font-weight:700;letter-spacing:0.04em;">MERIDIAN</div>
+        <div style="font-size:10px;color:#94a3b8;font-weight:500;letter-spacing:0.06em;">SMC TRADING DESK</div>
+      </div>
+    </div>
+    <div style="width:1px;height:28px;background:#e3e7ee;"></div>
+    <div style="display:flex;gap:6px;overflow:hidden;">
+      <sc-for list="{{ instr }}" as="it" hint-placeholder-count="6">
+        <button style="{{ it.style }}" onClick="{{ it.onClick }}">{{ it.short }}</button>
+      </sc-for>
+    </div>
+    <div style="margin-left:auto;display:flex;align-items:center;gap:16px;">
+      <div style="text-align:right;line-height:1.1;">
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:21px;font-weight:600;letter-spacing:-0.01em;">{{ priceStr }}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;color:#94a3b8;">{{ title }}</div>
+      </div>
+      <div style="{{ changeStyle }}">{{ arrow }} {{ changeStr }} ({{ changePctStr }})</div>
+      <button onClick="{{ toggleConnect }}" style="display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;border:1px solid #e3e7ee;background:#fbfcfe;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;">
+        <span style="{{ sourceDotStyle }}"></span>
+        <span style="font-size:11.5px;font-weight:600;color:#475569;">{{ sourceLabel }}</span>
+      </button>
+    </div>
+  </header>
+
+  <div style="flex:1;display:flex;min-height:0;">
+
+    <div style="flex:1;display:flex;flex-direction:column;min-width:0;padding:12px;gap:9px;">
+      <div style="display:flex;align-items:center;gap:8px;flex:none;">
+        <div style="display:flex;gap:5px;">
+          <sc-for list="{{ tfs }}" as="t" hint-placeholder-count="4">
+            <button style="{{ t.style }}" onClick="{{ t.onClick }}">{{ t.label }}</button>
+          </sc-for>
+        </div>
+        <div style="width:1px;height:22px;background:#e3e7ee;margin:0 4px;"></div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <sc-for list="{{ overlays }}" as="o" hint-placeholder-count="5">
+            <button style="{{ o.style }}" onClick="{{ o.onClick }}"><span style="{{ o.dotStyle }}"></span>{{ o.label }}</button>
+          </sc-for>
+        </div>
+        <div style="margin-left:auto;font-size:11px;color:#94a3b8;font-family:'IBM Plex Mono',monospace;">drag-free · scroll-free · {{ barCount }} bars</div>
+      </div>
+
+      <div style="flex:1;position:relative;background:#ffffff;border-radius:11px;border:1px solid #e3e7ee;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,41,0.04);min-height:0;">
+        <canvas ref="{{ setCanvas }}" onMouseMove="{{ onMove }}" onMouseLeave="{{ onLeave }}" style="display:block;width:100%;height:100%;cursor:crosshair;"></canvas>
+      </div>
+    </div>
+
+    <aside style="width:362px;flex:none;background:#ffffff;border-left:1px solid #e3e7ee;display:flex;flex-direction:column;overflow-y:auto;">
+
+      <div style="padding:16px 16px 14px;border-bottom:1px solid #eef1f6;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.09em;color:#94a3b8;">STRATEGY RECOMMENDATION</div>
+          <div style="font-size:10px;color:#cbd5e1;font-family:'IBM Plex Mono',monospace;">{{ title }}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div style="{{ biasStyle }}">{{ biasLabel }}</div>
+          <div style="flex:1;">
+            <div style="display:flex;justify-content:space-between;font-size:10.5px;color:#94a3b8;font-weight:600;margin-bottom:5px;"><span>CONVICTION</span><span style="font-family:'IBM Plex Mono',monospace;color:#475569;">{{ confPct }}</span></div>
+            <div style="height:7px;border-radius:4px;background:#eef1f6;overflow:hidden;"><div style="{{ confBarStyle }}"></div></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;">
+          <div style="background:#f7f9fc;border:1px solid #eef1f6;border-radius:8px;padding:9px 11px;">
+            <div style="font-size:10px;color:#94a3b8;font-weight:600;letter-spacing:0.04em;">ENTRY ZONE</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;margin-top:2px;">{{ entry }}</div>
+          </div>
+          <div style="background:#fdf6f6;border:1px solid #fbe7e9;border-radius:8px;padding:9px 11px;">
+            <div style="font-size:10px;color:#e2536a;font-weight:600;letter-spacing:0.04em;">STOP LOSS</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;margin-top:2px;color:#d6334d;">{{ sl }}</div>
+          </div>
+          <div style="background:#f3faf6;border:1px solid #dcf0e6;border-radius:8px;padding:9px 11px;">
+            <div style="font-size:10px;color:#12a36a;font-weight:600;letter-spacing:0.04em;">TARGET 1</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;margin-top:2px;color:#0e9462;">{{ t1 }}</div>
+          </div>
+          <div style="background:#f3faf6;border:1px solid #dcf0e6;border-radius:8px;padding:9px 11px;">
+            <div style="font-size:10px;color:#12a36a;font-weight:600;letter-spacing:0.04em;">TARGET 2</div>
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:15px;font-weight:600;margin-top:2px;color:#0e9462;">{{ t2 }}</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:9px;padding:7px 11px;background:#0f1729;border-radius:8px;">
+          <span style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:0.04em;">RISK : REWARD</span>
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:600;color:#37d399;">{{ rr }}</span>
+        </div>
+
+        <div style="margin-top:13px;">
+          <div style="font-size:10.5px;font-weight:700;letter-spacing:0.06em;color:#94a3b8;margin-bottom:8px;">WHY THIS SETUP</div>
+          <sc-for list="{{ rationale }}" as="r" hint-placeholder-count="4">
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:7px;">
+              <span style="{{ r.dotStyle }}"></span>
+              <span style="font-size:12px;line-height:1.45;color:#475569;">{{ r.text }}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <sc-if value="{{ isIndex }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-top:11px;padding:10px 12px;border:1px dashed #c7d0f0;border-radius:9px;background:#f6f8ff;">
+            <div style="font-size:10px;font-weight:700;letter-spacing:0.05em;color:#4659c9;margin-bottom:3px;">OPTIONS IDEA</div>
+            <div style="font-size:12.5px;line-height:1.45;color:#33408f;font-weight:500;">{{ optionIdea }}</div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="padding:15px 16px 14px;border-bottom:1px solid #eef1f6;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.09em;color:#94a3b8;margin-bottom:11px;">DETECTED ZONES</div>
+        <sc-for list="{{ zones }}" as="z" hint-placeholder-count="5">
+          <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid #f4f6fa;">
+            <span style="{{ z.dotStyle }}"></span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12.5px;font-weight:600;color:#1f2a3d;">{{ z.label }}</div>
+              <div style="font-size:10.5px;color:#94a3b8;">{{ z.note }}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:12.5px;font-weight:600;">{{ z.level }}</div>
+              <div style="{{ z.tagStyle }}">{{ z.tag }}</div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="padding:15px 16px 14px;border-bottom:1px solid #eef1f6;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:0.09em;color:#94a3b8;">MARKET DEPTH</div>
+          <div style="font-size:10px;color:#cbd5e1;font-family:'IBM Plex Mono',monospace;">5 LEVELS</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;font-weight:600;margin-bottom:6px;"><span>BID</span><span>QTY</span></div>
+            <sc-for list="{{ bids }}" as="b" hint-placeholder-count="5">
+              <div style="position:relative;display:flex;justify-content:space-between;padding:4px 6px;margin-bottom:2px;border-radius:4px;overflow:hidden;">
+                <div style="{{ b.barStyle }}"></div>
+                <span style="position:relative;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#0e9462;font-weight:600;">{{ b.price }}</span>
+                <span style="position:relative;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#64748b;">{{ b.qty }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;font-weight:600;margin-bottom:6px;"><span>ASK</span><span>QTY</span></div>
+            <sc-for list="{{ asks }}" as="a" hint-placeholder-count="5">
+              <div style="position:relative;display:flex;justify-content:space-between;padding:4px 6px;margin-bottom:2px;border-radius:4px;overflow:hidden;">
+                <div style="{{ a.barStyle }}"></div>
+                <span style="position:relative;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#d6334d;font-weight:600;">{{ a.price }}</span>
+                <span style="position:relative;font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:#64748b;">{{ a.qty }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+  </div>
+
+  <div style="height:152px;flex:none;background:#ffffff;border-top:1px solid #e3e7ee;display:flex;flex-direction:column;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 18px 8px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.09em;color:#94a3b8;">POSITIONS &amp; JOURNAL</div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <span style="font-size:11px;color:#94a3b8;font-weight:500;">Net P&amp;L</span>
+        <span style="{{ netPnlStyle }}">{{ netPnl }}</span>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:0 18px 12px;">
+      <div style="display:grid;grid-template-columns:1.6fr 0.7fr 0.6fr 1fr 1fr 1fr 0.9fr;gap:8px;padding:0 4px 7px;font-size:10px;font-weight:700;letter-spacing:0.05em;color:#94a3b8;border-bottom:1px solid #eef1f6;">
+        <span>INSTRUMENT</span><span>SIDE</span><span>QTY</span><span>AVG</span><span>LTP</span><span>P&amp;L</span><span>STATUS</span>
+      </div>
+      <sc-for list="{{ positions }}" as="p" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:1.6fr 0.7fr 0.6fr 1fr 1fr 1fr 0.9fr;gap:8px;padding:9px 4px;align-items:center;border-bottom:1px solid #f4f6fa;">
+          <span style="font-size:12.5px;font-weight:600;font-family:'IBM Plex Mono',monospace;">{{ p.sym }}</span>
+          <span style="{{ p.sideStyle }}">{{ p.side }}</span>
+          <span style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:#475569;">{{ p.qty }}</span>
+          <span style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:#475569;">{{ p.avg }}</span>
+          <span style="font-size:12px;font-family:'IBM Plex Mono',monospace;color:#1f2a3d;">{{ p.ltp }}</span>
+          <span style="{{ p.pnlStyle }}">{{ p.pnl }}</span>
+          <span style="{{ p.statusStyle }}">{{ p.status }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-if value="{{ showConnect }}" hint-placeholder-val="{{ false }}">
+    <div onClick="{{ toggleConnect }}" style="position:fixed;inset:0;background:rgba(15,23,41,0.32);display:flex;align-items:center;justify-content:center;z-index:50;">
+      <div onClick="{{ stop }}" style="width:480px;max-width:92vw;background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(15,23,41,0.25);padding:24px 26px;">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:6px;">
+          <span style="width:9px;height:9px;border-radius:50%;background:#f5a524;"></span>
+          <div style="font-size:16px;font-weight:700;">Connect Upstox live data</div>
+        </div>
+        <p style="font-size:13px;line-height:1.6;color:#64748b;margin:8px 0 16px;">The desk is running on realistic demo candles. The detection &amp; strategy logic is fully live — only the feed is sample data. To stream real market data, wire your Upstox API into the data layer:</p>
+        <ol style="margin:0;padding-left:18px;font-size:12.5px;line-height:1.7;color:#33415c;">
+          <li>Complete the Upstox OAuth flow on your backend to obtain an <b>access token</b> (it cannot live safely in the browser).</li>
+          <li>Expose <code style="font-family:'IBM Plex Mono',monospace;background:#f1f4f9;padding:1px 5px;border-radius:4px;">window.UPSTOX_ACCESS_TOKEN</code> via your proxy.</li>
+          <li>The app calls <code style="font-family:'IBM Plex Mono',monospace;background:#f1f4f9;padding:1px 5px;border-radius:4px;font-size:11px;">/v2/historical-candle/intraday/{key}/{interval}</code> per instrument.</li>
+          <li>Instrument keys are already mapped (e.g. <code style="font-family:'IBM Plex Mono',monospace;background:#f1f4f9;padding:1px 5px;border-radius:4px;font-size:11px;">NSE_INDEX|Nifty 50</code>).</li>
+        </ol>
+        <div style="margin-top:16px;padding:11px 13px;background:#f7f9fc;border:1px solid #eef1f6;border-radius:9px;font-size:11.5px;color:#64748b;line-height:1.5;">This build ships with a Next.js backend that handles OAuth and proxies Upstox server-side, so your token stays private. Set your API key &amp; secret as env vars on Render, then log in below.</div>
+        <a href="/api/upstox/login" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px;border:none;border-radius:9px;background:#5a3df2;color:#fff;font-size:13.5px;font-weight:700;cursor:pointer;text-decoration:none;font-family:'IBM Plex Sans',sans-serif;box-sizing:border-box;">Login with Upstox →</a>
+        <button onClick="{{ toggleConnect }}" style="margin-top:9px;width:100%;padding:11px;border:1px solid #e3e7ee;border-radius:9px;background:#fff;color:#475569;font-size:13px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans',sans-serif;">Continue with demo data</button>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;defaultInstrument&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;NIFTY&quot;,&quot;BANKNIFTY&quot;,&quot;RELIANCE&quot;,&quot;HDFCBANK&quot;,&quot;TCS&quot;,&quot;INFY&quot;],&quot;default&quot;:&quot;NIFTY&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;defaultTimeframe&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;5m&quot;,&quot;15m&quot;,&quot;1h&quot;,&quot;1d&quot;],&quot;default&quot;:&quot;15m&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;color&quot;,&quot;default&quot;:&quot;#3b5bdb&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  // ---------- setup ----------
+  constructor(props){
+    super(props);
+    this.cursor = null;
+    this.setCanvas = (el)=>{ this.canvas = el; };
+    const INSTR = [
+      {sym:'NIFTY 50',   short:'NIFTY',     base:25812, kind:'index', lot:25, step:50,  key:'NSE_INDEX|Nifty 50'},
+      {sym:'BANK NIFTY', short:'BANKNIFTY', base:57480, kind:'index', lot:15, step:100, key:'NSE_INDEX|Nifty Bank'},
+      {sym:'RELIANCE',   short:'RELIANCE',  base:3054,  kind:'eq',  key:'NSE_EQ|INE002A01018'},
+      {sym:'HDFC BANK',  short:'HDFCBANK',  base:1948,  kind:'eq',  key:'NSE_EQ|INE040A01034'},
+      {sym:'TCS',        short:'TCS',       base:4312,  kind:'eq',  key:'NSE_EQ|INE467B01029'},
+      {sym:'INFOSYS',    short:'INFY',      base:1986,  kind:'eq',  key:'NSE_EQ|INE009A01021'},
+    ];
+    this.INSTR = INSTR;
+    this.TFS = [{k:'5m',label:'5m',min:5},{k:'15m',label:'15m',min:15},{k:'1h',label:'1H',min:60},{k:'1d',label:'1D',min:1440}];
+    const di = INSTR.findIndex(x=>x.short===(this.props.defaultInstrument||'NIFTY'));
+    const dt = ['5m','15m','1h','1d'].includes(this.props.defaultTimeframe)?this.props.defaultTimeframe:'15m';
+    this.state = {
+      instrIdx: di<0?0:di,
+      tf: dt,
+      overlays:{ob:true,fvg:true,struct:true,liq:true,sr:true},
+      showConnect:false,
+      analysis:null
+    };
+    this.regen(this.state.instrIdx, this.state.tf, true);
+  }
+  get accent(){ return this.props.accent || '#3b5bdb'; }
+
+  // ---------- rng ----------
+  hash(s){let h=1779033703^s.length;for(let i=0;i<s.length;i++){h=Math.imul(h^s.charCodeAt(i),3432918353);h=h<<13|h>>>19;}return (h^=h>>>16)>>>0;}
+  rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+  // ---------- data layer (Upstox-ready) ----------
+  async fetchUpstoxCandles(instrumentKey, interval){
+    // LIVE FEED via the Next.js backend proxy (/api/upstox/candles).
+    // The proxy holds the Upstox token server-side (httpOnly cookie set during OAuth),
+    // so the browser never sees it and Upstox's CORS block is bypassed.
+    try{
+      const url = `/api/upstox/candles?instrument=${encodeURIComponent(instrumentKey)}&interval=${encodeURIComponent(interval)}`;
+      const res = await fetch(url,{headers:{Accept:'application/json'},credentials:'same-origin'});
+      if(!res.ok) return null; // 401 = not logged in → fall back to demo candles
+      const j = await res.json();
+      const candles = (j && j.candles) || [];
+      if(!candles.length) return null;
+      // Upstox returns [timestamp, open, high, low, close, volume, oi], newest first.
+      return candles.slice().reverse().map(c=>({t:Date.parse(c[0]),o:c[1],h:c[2],l:c[3],c:c[4],v:c[5]||0})).slice(-150);
+    }catch(e){ return null; }
+  }
+
+  genBars(inst, tfk){
+    const tf = this.TFS.find(t=>t.k===tfk);
+    const n = 120, min = tf.min;
+    const r = this.rng(this.hash(inst.sym + tfk));
+    let price = inst.base;
+    const volp = inst.base * (tfk==='1d'?0.013 : tfk==='1h'?0.0045 : tfk==='15m'?0.0024 : 0.0015);
+    const baseVol = inst.kind==='index' ? (inst.base>40000?9e5:14e5) : 32e5;
+    let drift = (r()-0.5)*volp*0.6;
+    const bars=[];
+    let t = Date.now() - n*min*60000;
+    const round = (x)=> Math.round(x*20)/20;
+    for(let i=0;i<n;i++){
+      if(i%16===0) drift = (r()-0.5)*volp*0.9;
+      const o = price;
+      const dc = drift + (r()-0.5)*volp*2.1;
+      let c = o + dc;
+      const up = r()*volp*0.95, dn = r()*volp*0.95;
+      const h = Math.max(o,c)+up, l = Math.min(o,c)-dn;
+      const v = Math.round((r()*0.55+0.7)*baseVol*(1+Math.abs(dc)/volp*0.45));
+      bars.push({t, o:round(o), h:round(h), l:round(l), c:round(c), v});
+      price = c; t += min*60000;
+    }
+    return bars;
+  }
+
+  async regen(idx, tfk, sync){
+    const inst = this.INSTR[idx];
+    let bars = null;
+    const intervalMap={'5m':'1minute','15m':'1minute','1h':'30minute','1d':'30minute'};
+    if(!sync){ try{ bars = await this.fetchUpstoxCandles(inst.key, intervalMap[tfk]||'30minute'); }catch(e){ bars=null; } }
+    const live = !!bars;
+    if(!bars) bars = this.genBars(inst, tfk);
+    const analysis = this.analyze(bars, inst);
+    if(sync){ this.state.analysis = {bars, analysis, live, inst}; }
+    else { this.setState({analysis:{bars, analysis, live, inst}}); }
+  }
+
+  // ---------- SMC engine ----------
+  analyze(bars, inst){
+    const n = bars.length;
+    const L = 2;
+    const highs=[], lows=[];
+    for(let i=L;i<n-L;i++){
+      let ph=true, pl=true;
+      for(let k=1;k<=L;k++){ if(bars[i].h<=bars[i-k].h||bars[i].h<=bars[i+k].h) ph=false; if(bars[i].l>=bars[i-k].l||bars[i].l>=bars[i+k].l) pl=false; }
+      if(ph) highs.push({i,price:bars[i].h});
+      if(pl) lows.push({i,price:bars[i].l});
+    }
+    // structure: BOS / CHoCH
+    const swings=[...highs.map(h=>({...h,type:'H'})),...lows.map(l=>({...l,type:'L'}))].sort((a,b)=>a.i-b.i);
+    const events=[]; let trend=0, sh=null, sl=null, si=0;
+    for(let i=0;i<n;i++){
+      while(si<swings.length && swings[si].i+L<=i){ if(swings[si].type==='H') sh=swings[si]; else sl=swings[si]; si++; }
+      const c=bars[i].c;
+      if(sh && c>sh.price){ events.push({i,level:sh.price,dir:'bull',kind:trend===-1?'CHoCH':'BOS',fromI:sh.i}); trend=1; sh=null; }
+      else if(sl && c<sl.price){ events.push({i,level:sl.price,dir:'bear',kind:trend===1?'CHoCH':'BOS',fromI:sl.i}); trend=-1; sl=null; }
+    }
+    // FVG
+    let fvgs=[];
+    for(let i=2;i<n;i++){
+      if(bars[i].l>bars[i-2].h){ fvgs.push({i:i-1,top:bars[i].l,bottom:bars[i-2].h,dir:'bull'}); }
+      else if(bars[i].h<bars[i-2].l){ fvgs.push({i:i-1,top:bars[i-2].l,bottom:bars[i].h,dir:'bear'}); }
+    }
+    fvgs.forEach(f=>{ f.tested=false; for(let j=f.i+2;j<n;j++){ if(bars[j].l<=f.top && bars[j].h>=f.bottom){ f.tested=true; break; } } });
+    fvgs = fvgs.slice(-7);
+    // Order blocks from structure events
+    let obs=[];
+    events.forEach(ev=>{
+      let k=ev.i;
+      if(ev.dir==='bull'){ while(k>0 && bars[k].c>=bars[k].o) k--; }
+      else { while(k>0 && bars[k].c<=bars[k].o) k--; }
+      const ob=bars[k];
+      const z={i:k,top:ob.h,bottom:ob.l,dir:ev.dir};
+      z.tested=false; for(let j=k+2;j<n;j++){ if(bars[j].l<=z.top && bars[j].h>=z.bottom){ z.tested=true; break; } }
+      if(!obs.some(o=>Math.abs(o.i-z.i)<=1)) obs.push(z);
+    });
+    obs = obs.slice(-6);
+    // liquidity: equal highs / lows
+    const tol = inst.base*0.0011;
+    const liq=[];
+    const cluster=(arr,side)=>{ const used=new Array(arr.length).fill(false); for(let a=0;a<arr.length;a++){ if(used[a])continue; const grp=[arr[a]]; for(let b=a+1;b<arr.length;b++){ if(!used[b]&&Math.abs(arr[b].price-arr[a].price)<=tol){ grp.push(arr[b]); used[b]=true; } } if(grp.length>=2){ used[a]=true; liq.push({price:grp.reduce((s,g)=>s+g.price,0)/grp.length, side, touches:grp.length}); } } };
+    cluster(highs,'BSL'); cluster(lows,'SSL');
+    liq.sort((a,b)=>b.touches-a.touches);
+    const liqTop = liq.slice(0,4);
+    // S/R clusters (by touch count, all swings)
+    const all=[...highs,...lows].map(s=>s.price).sort((a,b)=>a-b);
+    const sr=[]; let g=[];
+    for(const p of all){ if(g.length && Math.abs(p-g[g.length-1])>tol*1.6){ if(g.length>=2) sr.push({price:g.reduce((s,x)=>s+x,0)/g.length,touches:g.length}); g=[]; } g.push(p); }
+    if(g.length>=2) sr.push({price:g.reduce((s,x)=>s+x,0)/g.length,touches:g.length});
+    sr.sort((a,b)=>b.touches-a.touches);
+    const srTop = sr.slice(0,3);
+
+    const strat = this.buildStrategy(bars, inst, {events,trend,fvgs,obs,liq:liqTop,sr:srTop,highs,lows});
+    return {highs,lows,events,trend,fvgs,obs,liq:liqTop,sr:srTop,strat};
+  }
+
+  buildStrategy(bars, inst, a){
+    const last = bars[bars.length-1].c;
+    const lastEv = a.events[a.events.length-1];
+    let bias = a.trend>0?'bull':a.trend<0?'bear':'neutral';
+    if(lastEv && bias==='neutral') bias = lastEv.dir;
+    const fresh = z=>!z.tested;
+    let zone=null, kindLabel='';
+    if(bias==='bull'){
+      const cands = [...a.obs.filter(o=>o.dir==='bull'&&o.top<last).map(o=>({...o,k:'Order Block'})),
+                     ...a.fvgs.filter(f=>f.dir==='bull'&&f.top<last).map(f=>({...f,k:'Fair Value Gap'}))];
+      cands.sort((x,y)=> (fresh(y)-fresh(x)) || (y.top-x.top));
+      zone=cands[0]; kindLabel=zone&&zone.k;
+    } else if(bias==='bear'){
+      const cands = [...a.obs.filter(o=>o.dir==='bear'&&o.bottom>last).map(o=>({...o,k:'Order Block'})),
+                     ...a.fvgs.filter(f=>f.dir==='bear'&&f.bottom>last).map(f=>({...f,k:'Fair Value Gap'}))];
+      cands.sort((x,y)=> (fresh(y)-fresh(x)) || (x.bottom-y.bottom));
+      zone=cands[0]; kindLabel=zone&&zone.k;
+    }
+    const buf = inst.base*0.0012;
+    let entry, stop, t1, t2, risk;
+    if(zone && bias==='bull'){ entry=(zone.top+zone.bottom)/2; stop=zone.bottom-buf; }
+    else if(zone && bias==='bear'){ entry=(zone.top+zone.bottom)/2; stop=zone.top+buf; }
+    else { entry=last; stop = bias==='bear'? last+inst.base*0.004 : last-inst.base*0.004; }
+    risk=Math.abs(entry-stop)||inst.base*0.003;
+    // targets: nearest liquidity / swing in direction, else R multiples
+    if(bias==='bull'){
+      const above=[...a.liq.filter(l=>l.price>entry).map(l=>l.price), ...a.highs.filter(h=>h.price>entry+risk*0.5).map(h=>h.price)].sort((x,y)=>x-y);
+      t1 = above[0] ?? entry+risk*2; t2 = above.find(p=>p>t1+risk*0.3) ?? entry+risk*3.2;
+    } else {
+      const below=[...a.liq.filter(l=>l.price<entry).map(l=>l.price), ...a.lows.filter(l=>l.price<entry-risk*0.5).map(l=>l.price)].sort((x,y)=>y-x);
+      t1 = below[0] ?? entry-risk*2; t2 = below.find(p=>p<t1-risk*0.3) ?? entry-risk*3.2;
+    }
+    const rr = Math.abs(t1-entry)/risk;
+    // confidence
+    let conf=40; const why=[];
+    if(lastEv && lastEv.dir===bias){ conf+= lastEv.kind==='CHoCH'?20:16; why.push({t:`${lastEv.kind} confirms a ${bias==='bull'?'bullish':'bearish'} shift in market structure`,k:'struct'}); }
+    if(zone){ conf+=14; why.push({t:`Unmitigated ${kindLabel.toLowerCase()} provides a ${bias==='bull'?'demand':'supply'} entry near ${this.fmt(entry,inst)}`,k:zone.k==='Order Block'?'ob':'fvg'}); }
+    const fvgConf = a.fvgs.some(f=>f.dir===bias && zone && f.top>=(zone.bottom-buf) && f.bottom<=(zone.top+buf));
+    if(fvgConf){ conf+=10; why.push({t:'Fair value gap overlaps the zone — added imbalance confluence',k:'fvg'}); }
+    if((bias==='bull'&&a.liq.some(l=>l.price>entry))||(bias==='bear'&&a.liq.some(l=>l.price<entry))){ conf+=10; why.push({t:`Resting liquidity at ${this.fmt(t1,inst)} is the logical first objective`,k:'liq'}); }
+    why.push({t:`Setup offers a ${rr.toFixed(2)} : 1 reward-to-risk profile`,k:'rr'});
+    conf=Math.max(26,Math.min(92,conf));
+    // option idea
+    let optionIdea='';
+    if(inst.kind==='index'){
+      const strike=Math.round(last/inst.step)*inst.step;
+      optionIdea = bias==='neutral'
+        ? `Range-bound — favour a non-directional play (e.g. ${inst.short} ${strike} straddle/iron-fly) until structure breaks.`
+        : `Buy ${inst.short} ${strike} ${bias==='bull'?'CE':'PE'} on a pullback into the ${kindLabel||'entry'} zone; trail once ${this.fmt(t1,inst)} prints.`;
+    }
+    return {bias, conf, entry, stop, t1, t2, rr, why, zone, kindLabel, optionIdea, last};
+  }
+
+  // ---------- formatting ----------
+  fmt(x, inst){ const dec = (inst||this.cur).base>=10000?0:(inst||this.cur).base>=1000?1:2; return Number(x).toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec}); }
+  fmt2(x){ return Number(x).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  get cur(){ return this.INSTR[this.state.instrIdx]; }
+
+  // ---------- interactions ----------
+  setInstrument(i){ this.cursor=null; this.setState({instrIdx:i},()=>this.regen(i,this.state.tf,false)); }
+  setTimeframe(k){ this.cursor=null; this.setState({tf:k},()=>this.regen(this.state.instrIdx,k,false)); }
+  toggleOverlay(key){ this.setState(s=>({overlays:{...s.overlays,[key]:!s.overlays[key]}})); }
+  toggleConnect(){ this.setState(s=>({showConnect:!s.showConnect})); }
+  onMove(e){ const cv=this.canvas; if(!cv)return; const r=cv.getBoundingClientRect(); this.cursor={x:e.clientX-r.left,y:e.clientY-r.top}; this.draw(); }
+  onLeave(){ this.cursor=null; this.draw(); }
+
+  // ---------- lifecycle ----------
+  componentDidMount(){ this.draw(); this._ro=new ResizeObserver(()=>this.draw()); if(this.canvas&&this.canvas.parentElement) this._ro.observe(this.canvas.parentElement); window.addEventListener('resize',this._rs=()=>this.draw()); }
+  componentDidUpdate(){ this.draw(); }
+  componentWillUnmount(){ if(this._ro)this._ro.disconnect(); if(this._rs)window.removeEventListener('resize',this._rs); }
+
+  // ---------- chart drawing ----------
+  draw(){
+    try{
+    const cv=this.canvas, A=this.state.analysis; if(!cv||!A) return;
+    const wrap=cv.parentElement; const W=wrap.clientWidth, H=wrap.clientHeight; if(!W||!H) return;
+    const dpr=window.devicePixelRatio||1;
+    cv.width=W*dpr; cv.height=H*dpr; const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,H);
+    const bars=A.bars, inst=A.inst, an=A.analysis, ov=this.state.overlays, ac=this.accent;
+    const n=bars.length;
+    const padL=8, padR=70, padT=12, padB=24;
+    const totalH=H-padT-padB, volH=totalH*0.18, gap=10, priceH=totalH-volH-gap;
+    const pTop=padT, pBot=padT+priceH, vTop=pBot+gap, vBot=vTop+volH;
+    const plotW=W-padL-padR;
+    let mn=Infinity,mx=-Infinity; for(const b of bars){ if(b.l<mn)mn=b.l; if(b.h>mx)mx=b.h; }
+    const pad=(mx-mn)*0.06; mn-=pad; mx+=pad;
+    const yP=(p)=> pTop+(mx-p)/(mx-mn)*priceH;
+    const cw=plotW/n, cx=(i)=>padL+i*cw+cw/2;
+    let mv=0; for(const b of bars) if(b.v>mv)mv=b.v;
+    const C={bull:'#16a36b',bear:'#e2536a',bullW:'rgba(22,163,107,0.45)',bearW:'rgba(226,83,106,0.45)',grid:'#f0f3f8',axis:'#9aa6b6'};
+
+    // grid + price axis
+    ctx.font="10px 'IBM Plex Mono',monospace"; ctx.textBaseline='middle';
+    const steps=5, dec=inst.base>=10000?0:1;
+    for(let s=0;s<=steps;s++){ const p=mn+(mx-mn)*s/steps; const y=yP(p); ctx.strokeStyle=C.grid; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(padL+plotW,y); ctx.stroke(); ctx.fillStyle=C.axis; ctx.textAlign='left'; ctx.fillText(Number(p).toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec}), padL+plotW+6, y); }
+    // time axis
+    ctx.textAlign='center'; const tlabels=7;
+    for(let s=0;s<tlabels;s++){ const i=Math.round((n-1)*s/(tlabels-1)); const x=cx(i); const d=new Date(bars[i].t); const lab=this.state.tf==='1d'?`${d.getDate()}/${d.getMonth()+1}`:`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`; ctx.fillStyle=C.axis; ctx.fillText(lab,x,vBot+13); ctx.strokeStyle=C.grid; ctx.beginPath(); ctx.moveTo(x,pTop); ctx.lineTo(x,vBot); ctx.stroke(); }
+
+    const boxR=padL+plotW;
+    // S/R
+    if(ov.sr){ an.sr.forEach(s=>{ const y=yP(s.price); ctx.strokeStyle='rgba(120,134,156,0.55)'; ctx.lineWidth=1; ctx.setLineDash([2,3]); ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(boxR,y); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle='rgba(120,134,156,0.9)'; ctx.font="9px 'IBM Plex Mono',monospace"; ctx.textAlign='left'; ctx.fillText('S/R',padL+2,y-6); }); }
+    // liquidity
+    if(ov.liq){ an.liq.forEach(l=>{ const y=yP(l.price); ctx.strokeStyle='#f0a91e'; ctx.lineWidth=1.2; ctx.setLineDash([6,3]); ctx.beginPath(); ctx.moveTo(padL,y); ctx.lineTo(boxR,y); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle='#c98708'; ctx.font="bold 9px 'IBM Plex Mono',monospace"; ctx.textAlign='right'; ctx.fillText(l.side,boxR-2,y-6); }); }
+    // OB
+    if(ov.ob){ an.obs.forEach(o=>{ const x0=cx(o.i)-cw/2, y0=yP(o.top), y1=yP(o.bottom); const bull=o.dir==='bull'; const al=o.tested?0.07:0.15; ctx.fillStyle=bull?`rgba(22,163,107,${al})`:`rgba(226,83,106,${al})`; ctx.fillRect(x0,y0,boxR-x0,y1-y0); ctx.fillStyle=bull?'rgba(22,163,107,0.9)':'rgba(226,83,106,0.9)'; ctx.fillRect(x0,y0,2.5,y1-y0); ctx.font="bold 8.5px 'IBM Plex Mono',monospace"; ctx.textAlign='left'; ctx.fillText('OB',x0+5,y0+7); }); }
+    // FVG
+    if(ov.fvg){ an.fvgs.forEach(f=>{ const x0=cx(f.i)-cw/2, y0=yP(f.top), y1=yP(f.bottom); const al=f.tested?0.05:0.13; ctx.fillStyle=`rgba(124,77,235,${al})`; ctx.fillRect(x0,y0,boxR-x0,y1-y0); ctx.strokeStyle=`rgba(124,77,235,${f.tested?0.2:0.4})`; ctx.lineWidth=1; ctx.strokeRect(x0+0.5,y0+0.5,boxR-x0-1,y1-y0-1); ctx.fillStyle='rgba(108,63,217,0.85)'; ctx.font="bold 8.5px 'IBM Plex Mono',monospace"; ctx.textAlign='right'; ctx.fillText('FVG',boxR-3,(y0+y1)/2); }); }
+
+    // candles
+    const bw=Math.max(1.4,cw*0.62);
+    for(let i=0;i<n;i++){ const b=bars[i], x=cx(i), up=b.c>=b.o; ctx.strokeStyle=up?C.bull:C.bear; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x,yP(b.h)); ctx.lineTo(x,yP(b.l)); ctx.stroke(); const yo=yP(b.o),yc=yP(b.c); ctx.fillStyle=up?C.bull:C.bear; ctx.fillRect(x-bw/2,Math.min(yo,yc),bw,Math.max(1,Math.abs(yc-yo))); }
+    // volume
+    for(let i=0;i<n;i++){ const b=bars[i], x=cx(i), up=b.c>=b.o, h=(b.v/mv)*volH; ctx.fillStyle=up?C.bullW:C.bearW; ctx.fillRect(x-bw/2,vBot-h,bw,h); }
+
+    // BOS / CHoCH
+    if(ov.struct){ an.events.slice(-6).forEach(ev=>{ const y=yP(ev.level), x1=cx(ev.fromI), x2=cx(ev.i); const col=ev.kind==='CHoCH'?'#f0820f':ac; ctx.strokeStyle=col; ctx.lineWidth=1.4; ctx.setLineDash([5,3]); ctx.beginPath(); ctx.moveTo(x1,y); ctx.lineTo(x2,y); ctx.stroke(); ctx.setLineDash([]); const arrow=ev.dir==='bull'?'▲':'▼'; ctx.fillStyle=col; ctx.font="bold 9px 'IBM Plex Sans',sans-serif"; ctx.textAlign='left'; ctx.fillText(`${ev.kind} ${arrow}`, x2+3, y); ctx.beginPath(); ctx.arc(x2,y,2.4,0,7); ctx.fill(); }); }
+
+    // crosshair + readout
+    let rb=bars[n-1], ri=n-1;
+    if(this.cursor){ ri=Math.max(0,Math.min(n-1,Math.floor((this.cursor.x-padL)/cw))); rb=bars[ri]; const x=cx(ri); ctx.strokeStyle='rgba(80,94,115,0.5)'; ctx.lineWidth=1; ctx.setLineDash([3,3]); ctx.beginPath(); ctx.moveTo(x,pTop); ctx.lineTo(x,vBot); ctx.stroke(); if(this.cursor.y>pTop&&this.cursor.y<pBot){ ctx.beginPath(); ctx.moveTo(padL,this.cursor.y); ctx.lineTo(padL+plotW,this.cursor.y); ctx.stroke(); const pr=mx-(this.cursor.y-pTop)/priceH*(mx-mn); ctx.setLineDash([]); ctx.fillStyle='#0f1729'; ctx.fillRect(padL+plotW,this.cursor.y-8,padR,16); ctx.fillStyle='#fff'; ctx.font="9px 'IBM Plex Mono',monospace"; ctx.textAlign='left'; ctx.fillText(Number(pr).toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec}),padL+plotW+6,this.cursor.y); } ctx.setLineDash([]); }
+
+    // top-left OHLC readout
+    const up=rb.c>=rb.o, chg=((rb.c-rb.o)/rb.o*100);
+    ctx.textAlign='left'; ctx.font="bold 11px 'IBM Plex Sans',sans-serif"; ctx.fillStyle='#1f2a3d';
+    ctx.fillText(`${inst.sym}  ·  ${this.state.tf}`, padL+4, pTop+10);
+    ctx.font="10.5px 'IBM Plex Mono',monospace";
+    const parts=[['O',rb.o],['H',rb.h],['L',rb.l],['C',rb.c]]; let xx=padL+4;
+    parts.forEach(([k,v])=>{ ctx.fillStyle='#9aa6b6'; ctx.fillText(k, xx, pTop+26); xx+=11; ctx.fillStyle=up?C.bull:C.bear; const t=Number(v).toLocaleString('en-IN',{minimumFractionDigits:dec,maximumFractionDigits:dec}); ctx.fillText(t, xx, pTop+26); xx+=ctx.measureText(t).width+12; });
+    ctx.fillStyle=up?C.bull:C.bear; ctx.fillText(`${chg>=0?'+':''}${chg.toFixed(2)}%`, xx, pTop+26);
+    }catch(e){ /* draw guard */ }
+  }
+
+  // ---------- render ----------
+  pillStyle(active){ return active
+    ? {padding:'6px 11px',borderRadius:'7px',border:'1px solid #0f1729',background:'#0f1729',color:'#fff',fontSize:'12px',fontWeight:600,cursor:'pointer',fontFamily:"'IBM Plex Mono',monospace",whiteSpace:'nowrap'}
+    : {padding:'6px 11px',borderRadius:'7px',border:'1px solid #e3e7ee',background:'#fff',color:'#64748b',fontSize:'12px',fontWeight:600,cursor:'pointer',fontFamily:"'IBM Plex Mono',monospace",whiteSpace:'nowrap'}; }
+  tfStyle(active){ const ac=this.accent; return active
+    ? {padding:'5px 13px',borderRadius:'7px',border:'1px solid '+ac,background:'#eef2ff',color:ac,fontSize:'12px',fontWeight:700,cursor:'pointer'}
+    : {padding:'5px 13px',borderRadius:'7px',border:'1px solid #e3e7ee',background:'#fff',color:'#64748b',fontSize:'12px',fontWeight:600,cursor:'pointer'}; }
+  chipStyle(on,col){ return {display:'inline-flex',alignItems:'center',gap:'6px',padding:'5px 10px',borderRadius:'7px',border:'1px solid '+(on?col+'55':'#e3e7ee'),background:on?col+'12':'#fff',color:on?col:'#9aa6b6',fontSize:'11.5px',fontWeight:600,cursor:'pointer'}; }
+  chipDot(on,col){ return {width:'7px',height:'7px',borderRadius:'2px',background:on?col:'#cbd5e1',display:'inline-block'}; }
+
+  renderVals(){
+    const inst=this.cur, A=this.state.analysis;
+    const ov=this.state.overlays;
+    const instr=this.INSTR.map((it,i)=>({short:it.short, style:this.pillStyle(i===this.state.instrIdx), onClick:()=>this.setInstrument(i)}));
+    const tfs=this.TFS.map(t=>({label:t.label, style:this.tfStyle(t.k===this.state.tf), onClick:()=>this.setTimeframe(t.k)}));
+    const ocols={ob:'#16a36b',fvg:'#7c4deb',struct:this.accent,liq:'#e0951a',sr:'#7886a0'};
+    const olabs={ob:'Order Blocks',fvg:'FVG',struct:'BOS / CHoCH',liq:'Liquidity',sr:'S / R'};
+    const overlays=Object.keys(olabs).map(k=>({label:olabs[k], style:this.chipStyle(ov[k],ocols[k]), dotStyle:this.chipDot(ov[k],ocols[k]), onClick:()=>this.toggleOverlay(k)}));
+
+    if(!A){ return {instr,tfs,overlays,setCanvas:this.setCanvas,onMove:e=>this.onMove(e),onLeave:()=>this.onLeave(),
+      title:inst.sym, priceStr:'—', changeStr:'—', changePctStr:'—', arrow:'', changeStyle:{}, barCount:120,
+      sourceLabel:'Demo data', sourceDotStyle:{}, toggleConnect:()=>this.toggleConnect(), showConnect:false, stop:e=>e.stopPropagation(),
+      biasLabel:'—', biasStyle:{}, confPct:'', confBarStyle:{}, entry:'—', sl:'—', t1:'—', t2:'—', rr:'—', rationale:[], isIndex:false, optionIdea:'',
+      zones:[], bids:[], asks:[], positions:[], netPnl:'—', netPnlStyle:{} }; }
+
+    const bars=A.bars, an=A.analysis, s=an.strat;
+    const last=bars[bars.length-1].c, prev=bars[0].o;
+    const chg=last-prev, pct=chg/prev*100, up=chg>=0;
+    const changeStyle={display:'inline-flex',alignItems:'center',gap:'5px',padding:'6px 11px',borderRadius:'8px',fontFamily:"'IBM Plex Mono',monospace",fontSize:'12.5px',fontWeight:600,background:up?'#e7f6ef':'#fdecef',color:up?'#0e9462':'#d6334d'};
+
+    const biasMap={bull:{l:'BULLISH',c:'#0e9462',bg:'#e7f6ef'},bear:{l:'BEARISH',c:'#d6334d',bg:'#fdecef'},neutral:{l:'NEUTRAL',c:'#7886a0',bg:'#eef1f6'}};
+    const bm=biasMap[s.bias];
+    const biasStyle={padding:'8px 16px',borderRadius:'9px',background:bm.bg,color:bm.c,fontSize:'15px',fontWeight:700,letterSpacing:'0.04em'};
+    const confColor=s.conf>=70?'#0e9462':s.conf>=50?'#e0951a':'#d6334d';
+    const confBarStyle={height:'100%',width:s.conf+'%',background:confColor,borderRadius:'4px'};
+
+    const dotW={struct:this.accent,ob:'#16a36b',fvg:'#7c4deb',liq:'#e0951a',rr:'#0f1729'};
+    const rationale=s.why.map(w=>({text:w.t, dotStyle:{width:'6px',height:'6px',borderRadius:'50%',marginTop:'5px',flex:'none',background:dotW[w.k]||this.accent}}));
+
+    // detected zones list
+    const zlist=[];
+    an.obs.slice().reverse().slice(0,3).forEach(o=>zlist.push({order:Math.abs((o.top+o.bottom)/2-last),
+      label:(o.dir==='bull'?'Bullish':'Bearish')+' Order Block', note:o.dir==='bull'?'Demand · institutional':'Supply · institutional',
+      level:this.fmt((o.top+o.bottom)/2,inst), tag:o.tested?'Tested':'Fresh', dot:o.dir==='bull'?'#16a36b':'#e2536a', tested:o.tested}));
+    an.fvgs.slice().reverse().slice(0,3).forEach(f=>zlist.push({order:Math.abs((f.top+f.bottom)/2-last),
+      label:(f.dir==='bull'?'Bullish':'Bearish')+' FVG', note:'Imbalance / fair value gap',
+      level:this.fmt((f.top+f.bottom)/2,inst), tag:f.tested?'Tested':'Fresh', dot:'#7c4deb', tested:f.tested}));
+    an.liq.slice(0,2).forEach(l=>zlist.push({order:Math.abs(l.price-last),
+      label:l.side==='BSL'?'Buy-side Liquidity':'Sell-side Liquidity', note:l.touches+' equal '+(l.side==='BSL'?'highs':'lows'),
+      level:this.fmt(l.price,inst), tag:'Pool', dot:'#e0951a', tested:false}));
+    zlist.sort((a,b)=>a.order-b.order);
+    const zones=zlist.slice(0,6).map(z=>({label:z.label, note:z.note, level:z.level,
+      dotStyle:{width:'9px',height:'9px',borderRadius:'3px',flex:'none',background:z.dot},
+      tag:z.tag, tagStyle:{fontSize:'9.5px',fontWeight:700,letterSpacing:'0.04em',color:z.tag==='Fresh'?'#0e9462':z.tag==='Pool'?'#c98708':'#9aa6b6'}}));
+
+    // market depth synth around last
+    const r=this.rng(this.hash(inst.sym+this.state.tf+'depth'));
+    const tick=inst.base>=10000?5:inst.base>=1000?0.5:0.05;
+    const mkLot=inst.kind==='index'?inst.lot:1;
+    let maxq=1; const braw=[],araw=[];
+    for(let i=0;i<5;i++){ const q=Math.round((r()*0.7+0.3)*900)*mkLot; const q2=Math.round((r()*0.7+0.3)*900)*mkLot; braw.push({p:last-tick*(i+1),q}); araw.push({p:last+tick*(i+1),q:q2}); maxq=Math.max(maxq,q,q2); }
+    const bids=braw.map(b=>({price:this.fmt(b.p,inst), qty:b.q.toLocaleString('en-IN'), barStyle:{position:'absolute',right:0,top:0,bottom:0,width:(b.q/maxq*100)+'%',background:'rgba(22,163,107,0.10)'}}));
+    const asks=araw.map(a=>({price:this.fmt(a.p,inst), qty:a.q.toLocaleString('en-IN'), barStyle:{position:'absolute',left:0,top:0,bottom:0,width:(a.q/maxq*100)+'%',background:'rgba(226,83,106,0.10)'}}));
+
+    // positions / journal (illustrative)
+    const sideStyle=(b)=>({fontSize:'10.5px',fontWeight:700,letterSpacing:'0.03em',padding:'2px 7px',borderRadius:'5px',justifySelf:'start',background:b?'#e7f6ef':'#fdecef',color:b?'#0e9462':'#d6334d'});
+    const pnlStyle=(v)=>({fontSize:'12px',fontWeight:600,fontFamily:"'IBM Plex Mono',monospace",color:v>=0?'#0e9462':'#d6334d'});
+    const statStyle=(open)=>({fontSize:'10px',fontWeight:600,padding:'2px 8px',borderRadius:'5px',justifySelf:'start',background:open?'#eef2ff':'#f1f4f9',color:open?this.accent:'#94a3b8'});
+    const posRaw=[
+      {sym:'NIFTY 25800 CE', buy:true, qty:'75', avg:142.30, ltp:168.55, open:true},
+      {sym:'BANKNIFTY 57500 PE', buy:false, qty:'45', avg:212.00, ltp:189.40, open:true},
+      {sym:'RELIANCE EQ', buy:true, qty:'200', avg:2988.50, ltp:3054.20, open:true},
+      {sym:'INFY 1950 PE', buy:false, qty:'400', avg:38.60, ltp:46.10, open:false},
+    ];
+    let net=0;
+    const positions=posRaw.map(p=>{ const mult=p.sym.includes('CE')||p.sym.includes('PE')?1:1; const dir=p.buy?1:-1; const pnl=(p.ltp-p.avg)*dir*parseFloat(p.qty)*mult; net+=pnl;
+      return {sym:p.sym, side:p.buy?'BUY':'SELL', sideStyle:sideStyle(p.buy), qty:p.qty, avg:this.fmt2(p.avg), ltp:this.fmt2(p.ltp),
+        pnl:(pnl>=0?'+':'−')+'₹'+Math.abs(Math.round(pnl)).toLocaleString('en-IN'), pnlStyle:pnlStyle(pnl),
+        status:p.open?'OPEN':'CLOSED', statusStyle:statStyle(p.open)}; });
+    const netPnlStyle={fontFamily:"'IBM Plex Mono',monospace",fontSize:'14px',fontWeight:700,color:net>=0?'#0e9462':'#d6334d'};
+
+    return {
+      instr, tfs, overlays, setCanvas:this.setCanvas, onMove:e=>this.onMove(e), onLeave:()=>this.onLeave(),
+      title:inst.sym, priceStr:this.fmt(last,inst), changeStr:(up?'+':'−')+this.fmt(Math.abs(chg),inst), changePctStr:(up?'+':'')+pct.toFixed(2)+'%', arrow:up?'▲':'▼', changeStyle, barCount:bars.length,
+      sourceLabel:A.live?'Upstox · live':'Demo data', sourceDotStyle:{width:'8px',height:'8px',borderRadius:'50%',background:A.live?'#16a36b':'#f5a524'},
+      toggleConnect:()=>this.toggleConnect(), showConnect:this.state.showConnect, stop:e=>e.stopPropagation(),
+      biasLabel:bm.l, biasStyle, confPct:s.conf+'%', confBarStyle,
+      entry:this.fmt(s.entry,inst), sl:this.fmt(s.stop,inst), t1:this.fmt(s.t1,inst), t2:this.fmt(s.t2,inst), rr:s.rr.toFixed(2)+' : 1',
+      rationale, isIndex:inst.kind==='index', optionIdea:s.optionIdea,
+      zones, bids, asks, positions, netPnl:(net>=0?'+':'−')+'₹'+Math.abs(Math.round(net)).toLocaleString('en-IN'), netPnlStyle
+    };
+  }
+}
+</script>
+</body>
+</html>
