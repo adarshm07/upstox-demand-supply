@@ -8,17 +8,32 @@ export const dynamic = "force-dynamic";
 //
 // The redirect_uri sent here MUST be byte-identical to the one used in step 1,
 // hence the same .trim() treatment.
+// Behind Render's proxy, req.url shows the INTERNAL host (localhost:10000).
+// Build redirects against the PUBLIC origin instead, using the forwarded
+// headers Render sets, falling back to the registered redirect URI's origin.
+function publicBase(req) {
+  const proto = req.headers.get("x-forwarded-proto");
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
+  if (proto && host && !host.startsWith("localhost")) return `${proto}://${host}`;
+  try {
+    return new URL((process.env.UPSTOX_REDIRECT_URI || "").trim()).origin;
+  } catch (e) {
+    return new URL(req.url).origin;
+  }
+}
+
 export async function GET(req) {
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
+  const base = publicBase(req);
 
   // Surface Upstox's own error if the dialog bounced back with one.
   const upstoxErr = url.searchParams.get("error") || url.searchParams.get("errorCode");
   if (upstoxErr) {
-    return NextResponse.redirect(new URL(`/desk.html?auth=error&reason=${encodeURIComponent(upstoxErr)}`, req.url));
+    return NextResponse.redirect(`${base}/desk.html?auth=error&reason=${encodeURIComponent(upstoxErr)}`);
   }
   if (!code) {
-    return NextResponse.redirect(new URL("/desk.html?auth=error&reason=no_code", req.url));
+    return NextResponse.redirect(`${base}/desk.html?auth=error&reason=no_code`);
   }
 
   const body = new URLSearchParams({
@@ -41,10 +56,10 @@ export async function GET(req) {
   const j = await res.json().catch(() => ({}));
   if (!res.ok || !j.access_token) {
     const reason = (j && j.errors && j.errors[0] && j.errors[0].errorCode) || "token_exchange_failed";
-    return NextResponse.redirect(new URL(`/desk.html?auth=error&reason=${encodeURIComponent(reason)}`, req.url));
+    return NextResponse.redirect(`${base}/desk.html?auth=error&reason=${encodeURIComponent(reason)}`);
   }
 
-  const resp = NextResponse.redirect(new URL("/desk.html?auth=ok", req.url));
+  const resp = NextResponse.redirect(`${base}/desk.html?auth=ok`);
   resp.cookies.set("upstox_token", j.access_token, {
     httpOnly: true,
     secure: true,
